@@ -1,0 +1,15 @@
+D:\Git\AIS\AIS\Lab2\Lab2-client\bin\Debug\net8.0\Lab2-client.exe
+D:\Git\AIS\AIS\Lab2\Lab2-client\bin\Debug\net8.0\Lab2-client.deps.json
+D:\Git\AIS\AIS\Lab2\Lab2-client\bin\Debug\net8.0\Lab2-client.runtimeconfig.json
+D:\Git\AIS\AIS\Lab2\Lab2-client\bin\Debug\net8.0\Lab2-client.dll
+D:\Git\AIS\AIS\Lab2\Lab2-client\bin\Debug\net8.0\Lab2-client.pdb
+D:\Git\AIS\AIS\Lab2\Lab2-client\obj\Debug\net8.0\Lab2-client.GeneratedMSBuildEditorConfig.editorconfig
+D:\Git\AIS\AIS\Lab2\Lab2-client\obj\Debug\net8.0\Lab2-client.AssemblyInfoInputs.cache
+D:\Git\AIS\AIS\Lab2\Lab2-client\obj\Debug\net8.0\Lab2-client.AssemblyInfo.cs
+D:\Git\AIS\AIS\Lab2\Lab2-client\obj\Debug\net8.0\Lab2-client.csproj.CoreCompileInputs.cache
+D:\Git\AIS\AIS\Lab2\Lab2-client\obj\Debug\net8.0\Lab2-client.sourcelink.json
+D:\Git\AIS\AIS\Lab2\Lab2-client\obj\Debug\net8.0\Lab2-client.dll
+D:\Git\AIS\AIS\Lab2\Lab2-client\obj\Debug\net8.0\refint\Lab2-client.dll
+D:\Git\AIS\AIS\Lab2\Lab2-client\obj\Debug\net8.0\Lab2-client.pdb
+D:\Git\AIS\AIS\Lab2\Lab2-client\obj\Debug\net8.0\Lab2-client.genruntimeconfig.cache
+D:\Git\AIS\AIS\Lab2\Lab2-client\obj\Debug\net8.0\ref\Lab2-client.dll
