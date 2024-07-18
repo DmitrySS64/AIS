@@ -135,3 +135,5 @@ publish/
 
 # NuGet Packages
 *.nupkg
+
+*/.vs/

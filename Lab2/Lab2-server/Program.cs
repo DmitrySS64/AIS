@@ -88,12 +88,12 @@ namespace Lab2_server
         private string HandleRequest1(string requestData)
         {
             var request = JsonSerializer.Deserialize<Request>(requestData);
+            var students = studentModel.GetValues();
             switch (request.Command)
             {
                 case "Get":
-                    return JsonSerializer.Serialize(studentModel.GetValues());
+                    return JsonSerializer.Serialize(students);
                 case "GetById":
-                    var students = studentModel.GetValues();
                     if (request.Id >= students.Count || request.Id < 0)
                     {
                         return "NotFound";
@@ -105,11 +105,19 @@ namespace Lab2_server
                     studentModel.AddEntry(entryFields);
                     return "OK";
                 case "Update":
+                    if (request.Id >= students.Count || request.Id < 0)
+                    {
+                        return "NotFound";
+                    }
                     var updatedStudent = JsonSerializer.Deserialize<Student>(request.Payload);
                     var updateFields = new string[] { updatedStudent.Name, updatedStudent.LastName, updatedStudent.Age.ToString(), updatedStudent.IsStudent.ToString() };
                     studentModel.EditEntry(request.Id, updateFields);
                     return "OK";
                 case "Delete":
+                    if (request.Id >= students.Count || request.Id < 0)
+                    {
+                        return "NotFound";
+                    }
                     studentModel.RemoveEntry(request.Id);
                     return "OK";
                 default:

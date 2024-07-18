@@ -6,13 +6,11 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ArchitectureOfInformationSystems.MVC.View
+namespace Lab2_client
 {
-    public class View
+    public static class View
     {
-        public View() { }
-
-        public void Menu(List<string> menu, string menuName = "Меню", bool clearView = true)
+        public static void Menu(List<string> menu, string menuName = "Меню", bool clearView = true)
         {
             if (clearView) Clear();
             Console.WriteLine($"{menuName}");
@@ -25,10 +23,9 @@ namespace ArchitectureOfInformationSystems.MVC.View
             }
         }
 
-        public void Table<T>(List<T> records)
+        public static void Table<T>(List<T> records, bool clearView = true)
         {
-            Clear();
-
+            if (clearView) Clear();
             if (records.Count == 0)
             {
                 TextOutput("Нет записей.");
@@ -39,6 +36,7 @@ namespace ArchitectureOfInformationSystems.MVC.View
             PropertyInfo[] properties = type.GetProperties();
 
             // Вывод заголовков столбцов
+            Console.Write("\t");
             foreach (var property in properties)
             {
                 Console.Write($"{property.Name}\t");
@@ -59,31 +57,43 @@ namespace ArchitectureOfInformationSystems.MVC.View
             }
         }
 
+        public static void RecordFromTable<T>(T record)
+        {
+            Clear();
+
+            Type type = typeof(T);
+            PropertyInfo[] properties = type.GetProperties();
+
+            foreach (var property in properties)
+            {
+                Console.Write($"{property.Name}:\t");
+                Console.WriteLine($"{property.GetValue(record)}");
+            }
+        }
 
 
-        public void Error(string s)
+        public static void Error(string s)
         {
             Console.Write($"{Constants.Error}{s}\n");
             Console.ReadKey();
         }
 
-        public void Clear()
+        public static void Clear()
         {
             Console.Clear();
-            //Massage("");
         }
 
-        public void Massage(string str)
+        public static void Massage(string str)
         {
             Console.WriteLine($"{Constants.Massage}{str}\n");
         }
 
-        public void TextOutput(string str)
+        public static void TextOutput(string str)
         {
             Console.WriteLine($"{Constants.Text}{str}");
         }
 
-        public void PrintObjectProperties(object? obj, bool clearView = true)
+        public static void PrintObjectProperties(object? obj, bool clearView = true)
         {
             if (clearView) Clear();
 
@@ -105,13 +115,13 @@ namespace ArchitectureOfInformationSystems.MVC.View
             }
         }
 
-        private void Rejection(string massege = "Некорректный ввод, попробуйте снова")
+        private static void Rejection(string massege = "Некорректный ввод, попробуйте снова")
         {
             Console.WriteLine($"{Constants.Rejection}{massege}");
             Console.ReadKey();
         }
 
-        public string InputString(string massage = "Введите текст")
+        public static string InputString(string massage = "Введите текст")
         {
             string? input;
 
@@ -125,7 +135,7 @@ namespace ArchitectureOfInformationSystems.MVC.View
             }
         }
 
-        public bool InputBool(string massage = "Введите 0 - False или 1 - True")
+        public static bool InputBool(string massage = "Введите 0 - False или 1 - True")
         {
             while (true)
             {
@@ -140,7 +150,7 @@ namespace ArchitectureOfInformationSystems.MVC.View
             }
         }
 
-        public int InputInt(string massage = "Введите число")
+        public static int InputInt(string massage = "Введите число")
         {
             while (true)
             {
@@ -159,7 +169,7 @@ namespace ArchitectureOfInformationSystems.MVC.View
 
     }
 
-    public class Constants
+    public static class Constants
     {
         public const string Input = ">>> ",
             Massage = ">> ",
