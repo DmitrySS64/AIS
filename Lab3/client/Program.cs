@@ -6,11 +6,11 @@ using System.Net.Sockets;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
-using Lab2_client.Model;
-using Lab2_client.Model.Entity;
-using Validator = Lab2_client.Model.Validator;
+using client.Model;
+using client.Model.Entity;
+using Validator = client.Model.Validator;
 
-namespace Lab2_client
+namespace client
 {
     public class UdpClientApp
     {

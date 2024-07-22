@@ -5,7 +5,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Lab2_client
+namespace client
 {
     public static class View
     {

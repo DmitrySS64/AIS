@@ -1,4 +1,9 @@
-﻿namespace server.Models
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+
+namespace server.Models
 {
     public static class FileManagement
     {
@@ -7,7 +12,7 @@
             return File.Exists(path);
         }
 
-        public static string[][] GetTableStr(string path, string sep = ";")
+        public static string[][] GetTableStr(string path, char sep = ';')
         {
             var strLines = FileReader.ReadLines(path);
             if (strLines.Count == 0) return Array.Empty<string[]>();

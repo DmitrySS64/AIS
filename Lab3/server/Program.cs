@@ -1,4 +1,4 @@
-﻿using Lab2_server.Models;
+﻿using server.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,7 +9,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace Lab2_server
+namespace server
 {
     class Server
     {

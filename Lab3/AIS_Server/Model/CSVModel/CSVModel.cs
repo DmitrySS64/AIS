@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Reflection;
+using System.IO;
 
 namespace server.Models
 {
@@ -18,7 +19,7 @@ namespace server.Models
             if (pathFile is null || !FileManagement.CheckFile(pathFile))
                 throw new FileNotFoundException();
             this.pathFile = pathFile;
-            table = new();
+            table = new List<T>();
             UploadTable();
         }
 
@@ -55,7 +56,7 @@ namespace server.Models
 
         private T TryCreateEntry(IEnumerable<string> entryFields)
         {
-            T newEntry = new();
+            T newEntry = new T();
             var properties = newEntry.GetType().GetProperties();
             if (entryFields.Count() != properties.Length)
                 throw new Exception("Количество элементов массива не соответствует количеству свойств объекта");
@@ -115,7 +116,7 @@ namespace server.Models
 
         private void SaveTable()
         {
-            List<string[]> list = new();
+            List<string[]> list = new List<string[]>();
             PropertyInfo[] properties;
             if (table.Count > 0)
             {

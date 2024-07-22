@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Lab2_server.Models
+namespace server.Models
 {
     public interface IModel<T> where T : class, new()
     {

@@ -6,7 +6,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Lab2_client.Model.Entity
+namespace client.Model.Entity
 {
     public class Student
     {
