@@ -14,17 +14,18 @@ namespace Lab2_server
     class Server
     {
         private const int listenPort = 11000;
-        private static string filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "data.csv");
+        private static readonly string filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "data.csv");
         private static List<Dictionary<string, string>> records = new();
-        private static CSVModel<Student> studentModel;
+        private static CSVModel<Student>? studentModel;
 
         public Server()
         {
             studentModel = new CSVModel<Student>(filePath);
         }
 
-        private void StartListener()
+        private static void StartListener()
         {
+            studentModel = new CSVModel<Student>(filePath);
             UdpClient listener = new UdpClient(listenPort);
             IPEndPoint groupEP = new IPEndPoint(IPAddress.Any, listenPort);
             Console.WriteLine("UDP Server is listening on port {0}", listenPort);
@@ -53,39 +54,7 @@ namespace Lab2_server
             }
         }
 
-        //public Server(int port)
-        //{
-        //    UdpClient server = new UdpClient(port);
-        //    IPEndPoint clientEndPoint = new IPEndPoint(IPAddress.Any, 0);
-
-        //    Console.WriteLine("Сервер запущен");
-
-        //    try
-        //    {
-        //        LoadRecordsFromFile();
-        //    }
-        //    catch (Exception ex) {
-        //        Console.WriteLine($"Ошибка при загрузке из файла: {ex.Message}");
-        //    }
-
-        //    while (true)
-        //    {
-        //        byte[] data = server.Receive(ref clientEndPoint);
-        //        string message = Encoding.ASCII.GetString(data);
-
-        //        Console.WriteLine($"Получено сообщение: {message}");
-
-        //        var request = JsonSerializer.Deserialize<Dictionary<string, object>>(message);
-        //        if (request == null) continue;
-        //        var response = HandleRequest(request);
-
-        //        byte[] responseData = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(response));
-        //        server.Send(responseData, responseData.Length, clientEndPoint);
-        //    }
-        //}
-
-
-        private string HandleRequest1(string requestData)
+        private static string HandleRequest1(string requestData)
         {
             var request = JsonSerializer.Deserialize<Request>(requestData);
             var students = studentModel.GetValues();
@@ -249,8 +218,8 @@ namespace Lab2_server
         static void Main(string[] args)
         {
             //new Server(11000);
-            Server server = new();
-            server.StartListener();
+            //Server server = new();
+            StartListener();
         }
     }
 

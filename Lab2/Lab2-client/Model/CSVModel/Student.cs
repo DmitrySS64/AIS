@@ -6,7 +6,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ArchitectureOfInformationSystems.MVC.Model.Entity
+namespace Lab2_client.Model.Entity
 {
     public class Student
     {
@@ -47,6 +47,13 @@ namespace ArchitectureOfInformationSystems.MVC.Model.Entity
             LastName = lastName;
             Age = age;
             IsStudent = isStudent;
+        }
+
+        public bool Valid()
+        {
+            if (string.IsNullOrEmpty(Name) || string.IsNullOrEmpty(LastName) || Age == 0)
+                return false;
+            return true;
         }
     }
 }
