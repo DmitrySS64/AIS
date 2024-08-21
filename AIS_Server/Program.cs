@@ -17,7 +17,8 @@ namespace AIS_Server
         public static readonly Dictionary<string, Type> availableClasses = new Dictionary<string, Type>
         {
             { "student", typeof(Students) },
-            // Добавьте другие классы здесь
+            { "teachers", typeof(Teachers) }
+            
         };
 
         private static void StartListener()

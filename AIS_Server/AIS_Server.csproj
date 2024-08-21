@@ -76,6 +76,9 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>AIS.edmx</DependentUpon>
     </Compile>
+    <Compile Include="DAL\Teachers.cs">
+      <DependentUpon>AIS.tt</DependentUpon>
+    </Compile>
     <Compile Include="FormController.cs" />
     <Compile Include="DAL\ViewModal\StudentVM.cs" />
     <Compile Include="DAL\Students.cs">
