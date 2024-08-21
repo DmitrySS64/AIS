@@ -1,31 +1,30 @@
-﻿using Newtonsoft.Json;
-using server.Models;
+﻿using AIS_Server.DAL;
+using Newtonsoft.Json;
 using System;
-using System.IO;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using NLog;
+using NLog.Config;
 
-namespace server
+namespace AIS_Server
 {
     class Server
     {
         private const int listenPort = 11000;
-        private static readonly string filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "data.csv");
-        //private static List<Dictionary<string, string>> records = new();
-        private static CSVModel<Student> studentModel;
-
-        public Server()
+        private static Logger logger = LogManager.GetCurrentClassLogger();
+        public static readonly Dictionary<string, Type> availableClasses = new Dictionary<string, Type>
         {
-            studentModel = new CSVModel<Student>(filePath);
-        }
+            { "student", typeof(Students) },
+            // Добавьте другие классы здесь
+        };
 
         private static void StartListener()
         {
-            studentModel = new CSVModel<Student>(filePath);
             UdpClient listener = new UdpClient(listenPort);
             IPEndPoint groupEP = new IPEndPoint(IPAddress.Any, listenPort);
-            Console.WriteLine("UDP Server is listening on port {0}", listenPort);
+            logger.Info($"UDP Server is listening on port {listenPort}");
 
             try
             {
@@ -33,77 +32,134 @@ namespace server
                 {
                     byte[] bytes = listener.Receive(ref groupEP);
                     string receivedData = Encoding.UTF8.GetString(bytes);
-                    Console.WriteLine($"Received: {receivedData} from {groupEP}");
+                    logger.Info($"Received: {receivedData} from {groupEP}");
 
-                    var response = HandleRequest1(receivedData);
+                    var response = HandleRequest(receivedData);
                     byte[] responseBytes = Encoding.UTF8.GetBytes(response);
 
                     listener.Send(responseBytes, responseBytes.Length, groupEP);
+                    logger.Info($"Response sent to {groupEP}: {response}");
                 }
             }
             catch (Exception e)
             {
+                logger.Error(e, "Error occurred in UDP listener");
                 Console.WriteLine(e.ToString());
             }
             finally
             {
                 listener.Close();
+                logger.Info("UDP listener closed");
             }
         }
 
-        private static string HandleRequest1(string requestData)
+        private static string HandleRequest(string requestData)
         {
-            var request = JsonConvert.DeserializeObject<Request>(requestData);
-            var students = studentModel.GetValues();
-            switch (request.Command)
+            if (string.IsNullOrWhiteSpace(requestData))
             {
-                case "Get":
-                    return JsonConvert.SerializeObject(students);
-                case "GetById":
-                    if (request.Id >= students.Count || request.Id < 0)
-                    {
-                        return "NotFound";
-                    }
-                    return JsonConvert.SerializeObject(students[request.Id]);
-                case "Add":
-                    var newStudent = JsonConvert.DeserializeObject<Student>(request.Payload);
-                    var entryFields = new string[] { newStudent.Name, newStudent.LastName, newStudent.Age.ToString(), newStudent.IsStudent.ToString() };
-                    studentModel.AddEntry(entryFields);
-                    return "OK";
-                case "Update":
-                    if (request.Id >= students.Count || request.Id < 0)
-                    {
-                        return "NotFound";
-                    }
-                    var updatedStudent = JsonConvert.DeserializeObject<Student>(request.Payload);
-                    var updateFields = new string[] { updatedStudent.Name, updatedStudent.LastName, updatedStudent.Age.ToString(), updatedStudent.IsStudent.ToString() };
-                    studentModel.EditEntry(request.Id, updateFields);
-                    return "OK";
-                case "Delete":
-                    if (request.Id >= students.Count || request.Id < 0)
-                    {
-                        return "NotFound";
-                    }
-                    studentModel.RemoveEntry(request.Id);
-                    return "OK";
-                default:
-                    return "Unknown command";
+                logger.Warn("Received empty or whitespace request data");
+                return "Invalid request data";
             }
+
+            Request request;
+            try
+            {
+                request = JsonConvert.DeserializeObject<Request>(requestData);
+            }
+            catch (Exception ex)
+            {
+                logger.Error($"Error deserializing request: {ex.Message}");
+                return "Invalid request format";
+            }
+
+            if (request.Command == "GetClasses")
+            {
+                // Возвращает список доступных классов
+                return JsonConvert.SerializeObject(availableClasses.Keys);
+            }
+
+            if (request == null || string.IsNullOrWhiteSpace(request.ClassName) || string.IsNullOrWhiteSpace(request.Command))
+            {
+                logger.Warn("Received invalid request format");
+                return "Invalid request format";
+            }
+
+
+            if (!availableClasses.TryGetValue(request.ClassName.ToLower(), out Type classType))
+            {
+                logger.Warn($"Class not found: {request.ClassName}");
+                return "Class not found";
+            }
+
+            string response;
+
+            try
+            {
+                var methodInfo = typeof(Controller<>).MakeGenericType(classType);
+                if (methodInfo == null)
+                {
+                    logger.Warn("Method not found");
+                    return "Method not found";
+                }
+                switch (request.Command.ToLower())
+                {
+                    case "getform":
+                        return FormController.GetFormDescription(request.ClassName);
+                    case "get":
+                        response = (string)methodInfo
+                            .GetMethod("ListObjects")
+                            .Invoke(null, null);
+                        break;
+                    case "getbyid":
+                        response = (string)methodInfo
+                            .GetMethod("GetObjectById")
+                            .Invoke(null, new object[] { request.Id });
+                        break;
+                    case "add":
+                        var newObj = JsonConvert.DeserializeObject(request.Payload, classType);
+                        response = (string)methodInfo
+                            .GetMethod("AddObject")
+                            .Invoke(null, new object[] { newObj });
+                        break;
+                    case "update":
+                        var updatedObj = JsonConvert.DeserializeObject(request.Payload, classType);
+                        response = (string)methodInfo
+                            .GetMethod("UpdateObject")
+                            .Invoke(null, new object[] { request.Id, updatedObj });
+                        break;
+                    case "delete":
+                        response = (string)methodInfo
+                            .GetMethod("DeleteObject")
+                            .Invoke(null, new object[] { request.Id });
+                        break;
+                    default:
+                        logger.Warn($"Unknown command: {request.Command}");
+                        response = "Unknown command";
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error processing request");
+                response = $"Error processing request: {ex.Message}";
+            }
+
+            return response;
         }
 
         static void Main(string[] args)
         {
-            //new Server(11000);
-            //Server server = new();
+            LogManager.Configuration = new XmlLoggingConfiguration("NLog.config");
+            logger.Info("Server starting...");
             StartListener();
         }
     }
 
     public class Request
     {
+        public string ClassName { get; set; }
         public string Command { get; set; }
         public int Id { get; set; }
         public string Payload { get; set; }
     }
 }
-

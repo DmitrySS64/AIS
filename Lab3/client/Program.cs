@@ -1,238 +1,341 @@
-﻿using System;
-using System.ComponentModel.DataAnnotations;
-using System.Diagnostics.Metrics;
+﻿using Newtonsoft.Json;
 using System.Net;
 using System.Net.Sockets;
-using System.Reflection;
 using System.Text;
-using System.Text.Json;
-using client.Model;
-using client.Model.Entity;
-using Validator = client.Model.Validator;
+using client.View;
+using System;
+using System.Reflection;
 
 namespace client
 {
-    public class UdpClientApp
+    class Client
     {
-        private const int serverPort = 11000;
-        private const string serverAddress = "127.0.0.1";
-        private static List<string> menu = new List<string>() 
-        { 
-            "Get", 
-            "GetById",
-            "Add",
-            "Update", 
-            "Delete", 
-            "Exit" 
-        };
+        private static List<string> entities = new List<string>();
+        private static int indexCurrentEntity = -1;
+        private static UdpClient client;
+        private static IPEndPoint serverEP;
 
-        static void Main()
+        private static Menu MainMenu = new Menu(
+            menu: 
+            [
+                new MenuItem("List entities", ListEntities),
+                new MenuItem("View entity by ID", ViewEntityById),
+                new MenuItem("Add new entity", AddEntity),
+                new MenuItem("Update entity by ID", UpdateEntityById),
+                new MenuItem("Delete entity by ID", DeleteEntityById),
+                new MenuItem("Switch current entity", SwitchEntity),
+                new MenuItem("Exit", () => Environment.Exit(0), ConsoleKey.Escape)
+            ], 
+            title: "Main Menu"
+        );
+
+        private static void Main(string[] args)
         {
-            UdpClient client = new UdpClient();
-            client.Connect(serverAddress, serverPort);
-            bool Work = true;
-            while (Work)
+            client = new UdpClient();
+            serverEP = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 11000);
+
+            while (true)
             {
-                //Console.WriteLine("Enter command (Get, GetById, Add, Update, Delete, Exit):");
-                View.Menu(menu, "Enter command", false);
-                string command = Console.ReadLine().ToUpper();
-                string requestData = string.Empty;
-
-                switch (command)
-                {
-                    case COMMANDS.GET:
-                    case "0":
-                        requestData = JsonSerializer.Serialize(new Request { Command = "Get" });
-                        break;
-                    case COMMANDS.GET_BY_ID:
-                    case "1":
-                        Console.WriteLine("Enter ID:");
-                        int getId = int.Parse(Console.ReadLine());
-                        requestData = JsonSerializer.Serialize(new Request { Command = "GetById", Id = getId });
-                        break;
-                    case COMMANDS.ADD:
-                    case "2":
-                        Student? newStudent = CreateNewRecord();
-                        if (newStudent == null) continue;
-                        requestData = JsonSerializer.Serialize(new Request { Command = "Add", Payload = JsonSerializer.Serialize(newStudent) });
-                        break;
-                    case COMMANDS.UPDATE:
-                    case "3":
-                        Console.WriteLine("Enter ID:");
-                        int updateId = int.Parse(Console.ReadLine());
-                        requestData = JsonSerializer.Serialize(new Request { Command = "GetById", Id = updateId });
-                        Student student = JsonSerializer.Deserialize<Student>(GetTheServerResponse(client, requestData));
-                        Student? updatedStudent = CreateNewRecord(student);
-                        if (updatedStudent == null) continue;
-                        requestData = JsonSerializer.Serialize(new Request { Command = "Update", Id = updateId, Payload = JsonSerializer.Serialize(updatedStudent) });
-                        break;
-                    case COMMANDS.DELETE:
-                    case "4":
-                        Console.WriteLine("Enter ID:");
-                        int deleteId = int.Parse(Console.ReadLine());
-                        requestData = JsonSerializer.Serialize(new Request { Command = "Delete", Id = deleteId });
-                        break;
-                    case COMMANDS.EXIT:
-                    case "5":
-                        Work = false;
-                        break;
-                    default:
-                        Console.WriteLine("Unknown command.");
-                        Console.ReadKey();
-                        continue;
-                }
-
-                if (requestData == String.Empty) continue;
-                string responseData = GetTheServerResponse(client, requestData);
-
-                // Deserialize and print the response
                 try
                 {
-                    var students = new List<Student>();
-                    switch (command)
+                    LoadEntities();
+
+                    while (true)
                     {
-                        case COMMANDS.GET:
-                        case "0":
-                            View.Table(JsonSerializer.Deserialize<List<Student>>(responseData));
-                            break;
-                        case COMMANDS.GET_BY_ID:
-                        case "1":
-                            View.RecordFromTable(JsonSerializer.Deserialize<Student>(responseData));
-                            break;
-                        default:
-                            Console.WriteLine($"Server response: {responseData}");
-                            break;
+                        ShowMainMenu();
                     }
                 }
-                catch (JsonException)
+                catch (Exception ex)
                 {
-                    Console.WriteLine("JsonException");
-                    Console.WriteLine($"Server response: {responseData}");
+                    Console.WriteLine($"Error: {ex.Message}");
+                    WaitForUserInput();
                 }
-                Console.ReadKey();
             }
-
-            client.Close();
         }
 
-        private static string GetTheServerResponse(UdpClient client, string requestData)
+        private static void LoadEntities()
         {
-            byte[] sendBytes = Encoding.UTF8.GetBytes(requestData);
-            client.Send(sendBytes, sendBytes.Length);
-
-            IPEndPoint serverEP = new IPEndPoint(IPAddress.Any, 0);
-            byte[] receiveBytes = client.Receive(ref serverEP);
-            string responseData = Encoding.UTF8.GetString(receiveBytes);
-
-            return responseData;
+            SendRequest(new Request { Command = Commands.getClasses });
+            var response = ReceiveResponse();
+            entities = JsonConvert.DeserializeObject<List<string>>(response);
+            indexCurrentEntity = entities.Count > 0 ? 0 : -1;
+            Console.WriteLine($"Available classes: {string.Join(", ", entities)}");
         }
 
-        private static Student? CreateNewRecord(Student? newRecord = default)
+        
+        private static void ShowMainMenu()
         {
-            if (EqualityComparer<Student>.Default.Equals(newRecord, default(Student)))
+            string currentEntity = indexCurrentEntity != -1 ? entities[indexCurrentEntity] : "none";
+            Console.Clear();
+            Console.WriteLine($"Current entity: {currentEntity} (available {entities.Count})");
+            MainMenu.UseMenu();
+
+            WaitForUserInput();
+        }
+
+        #region CRUD
+        private static void ListEntities()
+        {
+            Console.Clear();
+            if (indexCurrentEntity == -1)
             {
-                newRecord = Activator.CreateInstance<Student>();
+                Console.WriteLine("No entity selected.");
+                return;
             }
 
-            PropertyInfo[] properties = typeof(Student).GetProperties();
+            SendRequest(new Request { ClassName = entities[indexCurrentEntity], Command = Commands.get });
+            var response = ReceiveResponse();
+            var objects = JsonConvert.DeserializeObject<List<Dictionary<string, object>>>(response);
 
-            //Dictionary<Type, Delegate> inputMethods = new()
-            //{
-            //    { typeof(string), new Input<string>(view.InputString) },
-            //    { typeof(int), new Input<int>(view.InputInt) },
-            //    { typeof(bool), new Input<bool>(view.InputBool) }
-            //};
+            ConsoleTable.PrintTable(objects);
+        }
 
-            List<string> menu = new List<string>(properties.Select(p => p.Name));
-
-            menu.Add("Сохранить изменения");
-            menu.Add("Отмена");
-
-            bool cycle = true;
-
-            while (cycle)
+        private static void ViewEntityById()
+        {
+            Console.Clear();
+            if (indexCurrentEntity == -1)
             {
-                View.PrintObjectProperties(newRecord);
+                Console.WriteLine("No entity selected.");
+                return;
+            }
 
-                View.Menu(menu, "Что вы хотите радактировать?", false);
+            Console.WriteLine("Enter ID:");
+            if (int.TryParse(Console.ReadLine(), out int id))
+            {
+                SendRequest(new Request { ClassName = entities[indexCurrentEntity], Command = Commands.getById, Id = id });
+                var response = ReceiveResponse();
+                var obj = JsonConvert.DeserializeObject<Dictionary<string, object>>(response);
+                ConsoleTable.PrintTableRecord(obj);
+            }
+            else
+            {
+                Console.WriteLine("Invalid ID");
+            }
+        }
 
-                int input = View.InputInt();
+        private static void AddEntity()
+        {
+            Console.Clear();
+            HandleAddOrUpdateEntity(Commands.add);
+        }
 
-                if (input >= 0 && input <= menu.Count - 3)
+        private static void UpdateEntityById()
+        {
+            Console.Clear();
+            if (indexCurrentEntity == -1)
+            {
+                Console.WriteLine("No entity selected.");
+                return;
+            }
+
+            Console.WriteLine("Enter ID:");
+            if (int.TryParse(Console.ReadLine(), out int id))
+            {
+                HandleAddOrUpdateEntity(Commands.update, id);
+            }
+            else
+            {
+                Console.WriteLine("Invalid ID");
+            }
+        }
+
+        private static void DeleteEntityById()
+        {
+            Console.Clear();
+            if (indexCurrentEntity == -1)
+            {
+                Console.WriteLine("No entity selected.");
+                return;
+            }
+
+            Console.WriteLine("Enter ID:");
+            if (int.TryParse(Console.ReadLine(), out int id))
+            {
+                SendRequest(new Request { ClassName = entities[indexCurrentEntity], Command = Commands.delete, Id = id });
+                var response = ReceiveResponse();
+                var objects = JsonConvert.DeserializeObject<Dictionary<string, object>>(response);
+                Console.WriteLine(response);
+            }
+            else
+            {
+                Console.WriteLine("Invalid ID");
+            }
+        }
+
+        private static void SwitchEntity()
+        {
+            Console.Clear();
+            Console.WriteLine("Available classes:");
+            for (int i = 0; i < entities.Count; i++)
+            {
+                Console.WriteLine($"{i + 1}. {entities[i]}");
+            }
+
+            Console.WriteLine("Enter the number of the class to switch to:");
+            if (int.TryParse(Console.ReadLine(), out int index) && index > 0 && index <= entities.Count)
+            {
+                indexCurrentEntity = index - 1;
+                Console.WriteLine($"Switched to {entities[indexCurrentEntity]}");
+            }
+            else
+            {
+                Console.WriteLine("Invalid selection.");
+            }
+        }
+
+        private static Dictionary<string, object> CollectEntityData(FormDescription form, Dictionary<string, object> existingData)
+        {
+            Dictionary<string, object> data = new(existingData);
+
+            while (true) {
+                Console.Clear();
+                ConsoleTable.PrintTableRecord(data);
+                for (int i = 0; i < form.Fields.Count; i++)
                 {
-                    PropertyInfo property = properties[input];
+                    FormField field = form.Fields[i];
+                    string currentValue = data.ContainsKey(field.Name) ? data[field.Name]?.ToString() : "не задано";
 
-                    var value = Validator.ConvertToType(property.PropertyType, View.InputString($"Введите {property.Name}"));
-
-                    try
-                    {
-                        property.SetValue(newRecord, value);
-                    }
-                    catch (Exception ex) { View.Error(ex.Message); }
+                    Console.WriteLine($"{i + 1}. {field.Label} ({field.Type} - Default: {field.DefaultValue ?? "нет значения"}) : Текущее значение: {currentValue}");
                 }
-                else if (input == menu.Count - 2)
+                Console.WriteLine("\nВыберите номер поля для редактирования или нажмите Esc для завершения:");
+                ConsoleKeyInfo key = Console.ReadKey(true);
+                if (key.Key == ConsoleKey.Escape)
                 {
-                    if (newRecord.Valid())
-                        //(IsObjectFullyInitialized(newRecord))
-                    {
-                        View.Massage("Сохранено");
-                        cycle = false;
-                        return newRecord;
-                    }
-                    else
-                    {
-                        View.Error("Введены не все данные");
-                    }
+                    return data; // Завершить редактирование
                 }
-                else if (input == menu.Count - 1)
+
+                if (int.TryParse(key.KeyChar.ToString(), out int index) && index >= 1 && index <= form.Fields.Count)
                 {
-                    View.Massage("Отмена...");
-                    return null;
+                    FormField selectedField = form.Fields[index - 1];
+                    Console.WriteLine($"\nВведите новое значение для {selectedField.Label} (оставьте пустым для значения по умолчанию): ");
+                    string input = Console.ReadLine();
+
+                    object value = string.IsNullOrEmpty(input) ? selectedField.DefaultValue : ConvertToFieldType(input, selectedField.Type);
+                    data[selectedField.Name] = value;
                 }
                 else
                 {
-                    View.Error("Некорректный ввод, попробуйте снова");
+                    Console.WriteLine("Неверный номер. Попробуйте ещё раз.");
                 }
             }
-
-            return newRecord;
         }
 
-        private static bool IsObjectFullyInitialized<T>(T obj)
+        private static void HandleAddOrUpdateEntity(string command, int? entityId = null)
         {
-            Type type = typeof(T);
-            PropertyInfo[] properties = type.GetProperties();
+            Dictionary<string, object> entityData = new Dictionary<string, object>();
 
-            foreach (var property in properties)
+            if (entityId.HasValue) {
+                SendRequest(new Request { ClassName = entities[indexCurrentEntity], Command = Commands.getById, Id = entityId.Value });
+                var entityResponse = ReceiveResponse();
+                entityData = JsonConvert.DeserializeObject<Dictionary<string, object>>(entityResponse);
+            }
+
+            // Получаем форму сущности с сервера
+            SendRequest(new Request { ClassName = entities[indexCurrentEntity], Command = Commands.getForm });
+            var formResponse = ReceiveResponse();
+            var form = JsonConvert.DeserializeObject<FormDescription>(formResponse);
+
+            // Собираем данные сущности
+            var data = CollectEntityData(form, entityData);
+
+            if (data == null)
             {
-                if (property.IsDefined(typeof(RequiredAttribute), false))
-                {
-                    object? value = property.GetValue(obj);
-                    if (value == null || (value is string strValue && string.IsNullOrWhiteSpace(strValue)))
-                    {
-                        return false;
-                    }
-                }
+                Console.WriteLine("Добавление/редактирование отменено.");
+                return;
             }
 
-            return true;
+            // Подтверждение или отмена изменений
+            Console.WriteLine("\nПодтвердите изменения (Enter для подтверждения, Esc для отмены):");
+            ConsoleKeyInfo confirmationKey = Console.ReadKey(true);
+            if (confirmationKey.Key == ConsoleKey.Escape)
+            {
+                Console.WriteLine("Операция отменена.");
+                return;
+            }
+
+            // Формируем запрос на добавление или обновление
+            var request = new Request
+            {
+                ClassName = entities[indexCurrentEntity],
+                Command = command,
+                Id = entityId ?? 0,
+                Payload = JsonConvert.SerializeObject(data)
+            };
+
+            SendRequest(request);
+            var response = ReceiveResponse();
+            Console.WriteLine($"Server response: {response}");
+        }
+        #endregion CRUD
+
+        private static object ConvertToFieldType(string input, string type)
+        {
+            switch (type.ToLower())
+            {
+                case "text":
+                    return input;
+                case "number":
+                    if (int.TryParse(input, out int intValue))
+                    {
+                        return intValue;
+                    }
+                    break;
+                case "date":
+                    if (DateTime.TryParse(input, out DateTime dateValue))
+                    {
+                        return dateValue;
+                    }
+                    break;
+                case "checkbox":
+                    if (bool.TryParse(input, out bool boolValue))
+                    {
+                        return boolValue;
+                    }
+                    break;
+            }
+
+            Console.WriteLine("Неверный формат значения. Попробуйте ещё раз.");
+            return null;
         }
 
-        static class COMMANDS
+        private static void SendRequest(Request request)
         {
-            public const string GET = "GET";
-            public const string GET_BY_ID = "GETBYID";
-            public const string ADD = "ADD";
-            public const string UPDATE = "UPDATE";
-            public const string DELETE = "DELETE";
-            public const string EXIT = "EXIT";
+            var data = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(request));
+            client.Send(data, data.Length, serverEP);
+        }
+
+        private static string ReceiveResponse()
+        {
+            var receivedData = client.Receive(ref serverEP);
+            return Encoding.UTF8.GetString(receivedData);
+        }
+        private static void WaitForUserInput()
+        {
+            Console.WriteLine("Press any key to return to the main menu...");
+            Console.ReadKey(true);
         }
     }
 
     public class Request
     {
+        public string ClassName { get; set; }
         public string Command { get; set; }
         public int Id { get; set; }
         public string Payload { get; set; }
+    }
+
+    public class FormField
+    {
+        public string Name { get; set; }
+        public string Type { get; set; } // Например, "text", "number", "date", "checkbox" и т.д.
+        public bool IsRequired { get; set; }
+        public string Label { get; set; }
+        public object DefaultValue { get; set; } // Значение по умолчанию, если применимо
+    }
+
+    public class FormDescription
+    {
+        public string ClassName { get; set; }
+        public List<FormField> Fields { get; set; }
     }
 }
