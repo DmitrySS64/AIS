@@ -318,19 +318,19 @@ namespace client
 
     public class Request
     {
-        public string ClassName { get; set; }
-        public string Command { get; set; }
+        public string? ClassName { get; set; }
+        public string? Command { get; set; }
         public int Id { get; set; }
-        public string Payload { get; set; }
+        public string? Payload { get; set; }
     }
 
     public class FormField
     {
-        public string Name { get; set; }
-        public string Type { get; set; } // Например, "text", "number", "date", "checkbox" и т.д.
+        public required string Name { get; set; }
+        public required string Type { get; set; } // Например, "text", "number", "date", "checkbox" и т.д.
         public bool IsRequired { get; set; }
-        public string Label { get; set; }
-        public object DefaultValue { get; set; } // Значение по умолчанию, если применимо
+        public required string Label { get; set; }
+        public object? DefaultValue { get; set; } // Значение по умолчанию, если применимо
     }
 
     public class FormDescription
