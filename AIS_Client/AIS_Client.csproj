@@ -61,6 +61,7 @@
     <Compile Include="Model\Commands.cs" />
     <Compile Include="Model\FormDescription.cs" />
     <Compile Include="Model\FormField.cs" />
+    <Compile Include="Utilities\DynamicEntity.cs" />
     <Compile Include="Utilities\INavigationService.cs" />
     <Compile Include="Utilities\NavigationService.cs" />
     <Compile Include="Utilities\ViewModelBase.cs" />

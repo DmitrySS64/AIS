@@ -31,7 +31,7 @@ namespace AIS_Client.ViewModel
         private bool _visibleAddBtn;
         private bool _visibleEditBtn;
         private bool _visibleDeleteBtn;
-        private ObservableCollection<Dictionary<string, object>> _entities;
+        private ObservableCollection<DynamicEntity> _entities;
 
         //private INavigationService _navigationService;
 
@@ -55,7 +55,7 @@ namespace AIS_Client.ViewModel
                 OnPropertyChanged(nameof(CurrentClass)); 
             }
         }
-        public ObservableCollection<Dictionary<string, object>> Entities
+        public ObservableCollection<DynamicEntity> Entities
         {
             get => _entities;
             set { _entities = value; OnPropertyChanged(nameof(Entities)); }
@@ -90,7 +90,7 @@ namespace AIS_Client.ViewModel
             _indexCurrentClass = -1;
 
             Classes = new ObservableCollection<string>();
-            Entities = new ObservableCollection<Dictionary<string, object>>();
+            Entities = new ObservableCollection<DynamicEntity>();
 
             LoadClassesCommand = new RelayCommand(LoadClasses);
             ListEntitiesCommand = new RelayCommand(ListEntities);
@@ -125,8 +125,8 @@ namespace AIS_Client.ViewModel
             var response = ReceiveResponse();
             if (response == null) return;
 
-            Entities = new ObservableCollection<Dictionary<string, object>>(
-                JsonConvert.DeserializeObject<List<Dictionary<string, object>>>(response));
+            var dictionaries = JsonConvert.DeserializeObject<List<Dictionary<string, object>>>(response);
+            Entities = new ObservableCollection<DynamicEntity>(dictionaries.Select(d => new DynamicEntity(d)));
         }
 
         private void AddEntity()
