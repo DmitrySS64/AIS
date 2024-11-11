@@ -17,6 +17,10 @@ using AIS_Client.View.Pages;
 using System.Windows.Navigation;
 using System.Windows.Controls;
 using AIS_Client.Utilities;
+using System.Data;
+using AIS_Client.View;
+using System.Security.Permissions;
+using System.Windows.Markup;
 
 namespace AIS_Client.ViewModel
 {
@@ -28,10 +32,11 @@ namespace AIS_Client.ViewModel
         private string _serverResponse;
         private ObservableCollection<string> _classes;
         private string _currentClass;
-        private bool _visibleAddBtn;
-        private bool _visibleEditBtn;
-        private bool _visibleDeleteBtn;
-        private ObservableCollection<DynamicEntity> _entities;
+        private Visibility _visibleAddBtn;
+        private Visibility _visibleEditBtn = Visibility.Hidden;
+        private Visibility _visibleDeleteBtn = Visibility.Hidden;
+        private DataTable _entities;
+        private DataRowView _selectedEntity;
 
         //private INavigationService _navigationService;
 
@@ -48,29 +53,46 @@ namespace AIS_Client.ViewModel
         public string CurrentClass
         {
             get => _currentClass;
-            set 
-            { 
+            set
+            {
                 _currentClass = value;
                 ListEntitiesCommand.Execute(null);
-                OnPropertyChanged(nameof(CurrentClass)); 
+                OnPropertyChanged(nameof(CurrentClass));
             }
         }
-        public ObservableCollection<DynamicEntity> Entities
+        public DataTable Entities
         {
             get => _entities;
             set { _entities = value; OnPropertyChanged(nameof(Entities)); }
         }
-        public bool VisibleAddBtn
+        public DataRowView SelectedEntity
+        {
+            get => _selectedEntity;
+            set
+            {
+                _selectedEntity = value;
+                if (_selectedEntity != null) {
+                    VisibleEditBtn = Visibility.Visible;
+                    VisibleDeleteBtn = Visibility.Visible;
+                }
+                else {
+                    VisibleEditBtn = Visibility.Hidden;
+                    VisibleDeleteBtn = Visibility.Hidden;
+                }
+                OnPropertyChanged(nameof(SelectedEntity));
+            }
+        }
+        public Visibility VisibleAddBtn
         {
             get => _visibleAddBtn;
             set { _visibleAddBtn = value; OnPropertyChanged(nameof(VisibleAddBtn)); } 
         }
-        public bool VisibleEditBtn 
+        public Visibility VisibleEditBtn 
         { 
             get => _visibleEditBtn; 
             set { _visibleEditBtn = value; OnPropertyChanged(nameof(VisibleEditBtn)); }
         }
-        public bool VisibleDeleteBtn 
+        public Visibility VisibleDeleteBtn 
         { 
             get => _visibleDeleteBtn;
             set { _visibleDeleteBtn = value; OnPropertyChanged(nameof(VisibleDeleteBtn)); }
@@ -90,7 +112,7 @@ namespace AIS_Client.ViewModel
             _indexCurrentClass = -1;
 
             Classes = new ObservableCollection<string>();
-            Entities = new ObservableCollection<DynamicEntity>();
+            Entities = new DataTable();
 
             LoadClassesCommand = new RelayCommand(LoadClasses);
             ListEntitiesCommand = new RelayCommand(ListEntities);
@@ -126,20 +148,110 @@ namespace AIS_Client.ViewModel
             if (response == null) return;
 
             var dictionaries = JsonConvert.DeserializeObject<List<Dictionary<string, object>>>(response);
-            Entities = new ObservableCollection<DynamicEntity>(dictionaries.Select(d => new DynamicEntity(d)));
+            Entities = ConvertToDataTable(dictionaries);
         }
 
-        private void AddEntity()
+        private void AddEntity() 
         {
+            SendRequest(new Request { ClassName = CurrentClass, Command = Commands.getForm });
+            var formResponse = ReceiveResponse();
+            var form = JsonConvert.DeserializeObject<FormDescription>(formResponse);
+
+            var addEntityWindow = new CreateModalWindow(form);
+            if (addEntityWindow.ShowDialog() == true)
+            {
+                // Получаем данные, введенные пользователем
+                var data = addEntityWindow.FormData;
+
+                // Отправляем запрос на добавление новой записи на сервер
+                var request = new Request
+                {
+                    ClassName = CurrentClass,
+                    Command = Commands.add,
+                    Payload = JsonConvert.SerializeObject(data)
+                };
+                SendRequest(request);
+                var response = ReceiveResponse();
+                Console.WriteLine($"Ответ сервера: {response}");
+
+                ListEntities();
+            }
+            else
+            {
+                Console.WriteLine("Добавление записи отменено.");
+            }
         }
         private void DeleteEntity()
         {
-            throw new NotImplementedException();
+            int id;
+            if (_selectedEntity != null && SelectedEntity["Id"] != DBNull.Value)
+            {
+                id = Convert.ToInt32(SelectedEntity["Id"]);
+            }
+            else
+            {
+                Console.WriteLine("No entity selected.");
+                return;
+            }
+
+
+            var deleteEntityWindow = new ConfirmDeleteWindow($"id: { id }");
+            if (deleteEntityWindow.ShowDialog() == true)
+            {
+                SendRequest(new Request { ClassName = CurrentClass, Command = Commands.delete, Id = id });
+                var response = ReceiveResponse();
+                Console.WriteLine("Response received: " + response);
+                ListEntities();
+            }
+            else
+            {
+                Console.WriteLine("Удаление записи отменено.");
+            }
         }
 
         private void EditEntity()
         {
-            throw new NotImplementedException();
+            int id;
+            if (_selectedEntity != null && SelectedEntity["Id"] != DBNull.Value)
+            {
+                id = Convert.ToInt32(SelectedEntity["Id"]);
+            }
+            else
+            {
+                Console.WriteLine("No entity selected.");
+                return;
+            }
+
+            SendRequest(new Request { ClassName = CurrentClass, Command = Commands.getForm });
+            var formResponse = ReceiveResponse();
+            var form = JsonConvert.DeserializeObject<FormDescription>(formResponse);
+
+            var editEntityWindow = new EditEntityWindow(_selectedEntity, form);
+
+            //var editEntityWindow = new EditEntityWindow(_selectedEntity.);
+            if (editEntityWindow.ShowDialog() == true)
+            {
+                var editedData = editEntityWindow.EditedData;
+
+                var data = new Dictionary<string, object>();
+
+                foreach (var field in editedData)
+                {
+                    data[field.Key] = field.Value;
+                }
+
+                var request = new Request
+                {
+                    ClassName = CurrentClass,
+                    Command = Commands.update,
+                    Id = id,
+                    Payload = JsonConvert.SerializeObject(data)
+                };
+                SendRequest(request);
+                var response = ReceiveResponse();
+                Console.WriteLine("Response received: " + response);
+                ListEntities();
+            }
         }
         #endregion CRUD
 
@@ -182,5 +294,33 @@ namespace AIS_Client.ViewModel
             });
             
         }
+
+        private DataTable ConvertToDataTable(List<Dictionary<string, object>> dictionaries)
+        {
+            var dataTable = new DataTable();
+
+            if (dictionaries == null || dictionaries.Count == 0)
+                return dataTable;
+
+            // Добавляем столбцы
+            foreach (var key in dictionaries[0].Keys)
+            {
+                dataTable.Columns.Add(key);
+            }
+
+            // Добавляем строки
+            foreach (var dict in dictionaries)
+            {
+                var row = dataTable.NewRow();
+                foreach (var kvp in dict)
+                {
+                    row[kvp.Key] = kvp.Value ?? DBNull.Value;
+                }
+                dataTable.Rows.Add(row);
+            }
+
+            return dataTable;
+        }
+
     }
 }

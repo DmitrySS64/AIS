@@ -1,0 +1,20 @@
+﻿<Window x:Class="AIS_Client.View.EditEntityWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:AIS_Client.View"
+        mc:Ignorable="d"
+        SizeToContent="WidthAndHeight"
+        Title="Редактировать запись">
+    <StackPanel Margin="10">
+        <TextBlock Text="Редактирование записи" FontWeight="Bold" Margin="0,0,0,10"/>
+        <TextBlock Text="Внимание! Изменение поля индентификатора повлечет за собой создание новой записи"  Width="200" Margin="0,0,0,10"/>
+        <local:FormControl x:Name="DynamicForm"/>
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+            <Button Content="Сохранить" Width="75" Margin="5" Click="OnSaveClick"/>
+            <Button Content="Отмена" Width="75" Margin="5" Click="OnCancelClick"/>
+        </StackPanel>
+    </StackPanel>
+</Window>

@@ -31,8 +31,10 @@
             Name="DataGridEntities"
             Grid.Row="1"
             AutoGenerateColumns="True"
-            ItemsSource="{Binding Entities}"
-            SelectionMode="Single"/>
+            IsReadOnly="true"
+            ItemsSource="{Binding Entities.DefaultView}"
+            SelectionMode="Single"
+            SelectedItem="{Binding SelectedEntity}"/>
         <TextBox Grid.Row="2"
             Text="{Binding ServerResponse}"
             IsReadOnly="True"
