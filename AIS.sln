@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AIS_Server", "AIS_Server\AI
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AIS_Client", "AIS_Client\AIS_Client.csproj", "{6A815567-6374-484F-98C5-20FDBA17F59F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vkontakte", "Vkontakte\Vkontakte.csproj", "{A4F76457-3B85-4509-8AC4-D86B1629D0D0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{6A815567-6374-484F-98C5-20FDBA17F59F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6A815567-6374-484F-98C5-20FDBA17F59F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6A815567-6374-484F-98C5-20FDBA17F59F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A4F76457-3B85-4509-8AC4-D86B1629D0D0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A4F76457-3B85-4509-8AC4-D86B1629D0D0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A4F76457-3B85-4509-8AC4-D86B1629D0D0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A4F76457-3B85-4509-8AC4-D86B1629D0D0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
