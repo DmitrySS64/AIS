@@ -14,11 +14,10 @@ using System.Runtime.Remoting.Contexts;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Lab_6
+namespace Lab_7
 {
     class Parser
     {
-        private const string url = "https://www.avito.ru/";
         //avito
         public async Task ParseProductInfo(string url)
         {
@@ -69,134 +68,11 @@ namespace Lab_6
             }
         }
 
-        //public async Task ParseProductInfo(string url)
-        //{
-        //    try
-        //    {
-        //        IDocument doc = await BrowsingContext.New(Configuration.Default.WithDefaultLoader()).OpenAsync(url);
 
-        //        Product product = new Product();
-        //        var name = doc.QuerySelector("h1[itemprop='name']")?.TextContent ?? "none";
-        //        var price = doc.QuerySelector("span[itemprop='price']")?.GetAttribute("content") ?? "none";
-        //        var description = doc.QuerySelector("div[itemprop='description']")?.TextContent ?? "none";
-
-        //        product.Name = name;
-        //        product.Price = price;
-        //        product.Description = description;
-        //        Console.WriteLine(product.GetInfo());
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Console.WriteLine($"Ошибка при парсинге страницы {url}: {ex.Message}");
-        //    }
-        //}
-
-        //public async Task ParseProductInfoDNS(string url)
-        //{
-        //    using (HttpClient client = new HttpClient())
-        //    {
-        //        var response = await client.GetAsync(url);
-        //        string htmlContent = await response.Content.ReadAsStringAsync();
-
-        //        IDocument doc = await BrowsingContext.New(Configuration.Default.WithDefaultLoader()).OpenAsync(req => req.Content(url));
-
-        //        var name = doc.QuerySelector(".product-card-top__name")?.TextContent ?? "none";
-        //        Console.WriteLine($"Product Name: {name}");
-        //    }
-        //}
-
-        //avito
-        public async Task ListProducts(string url)
-        {
-            IDocument doc = await BrowsingContext.New(Configuration.Default.WithDefaultLoader()).OpenAsync(url);
-            var products = doc.QuerySelectorAll("[data-marker='item']");
-            //List<Product> productsList = new List<Product>();
-            foreach (var item in products) {
-                var a = item.QuerySelector("[itemprop='url']")?.GetAttribute("href");
-                var name = item.QuerySelector("[itemprop='name']")?.TextContent;
-
-
-
-                Console.WriteLine($"{name}:{a}");
-                //await ParseProductInfo(url+a);
-                Console.WriteLine();
-            }
-        }
-        //ozon
-        public async Task<List<Product>> GetLinksOzon(string url)
-        {
-            try
-            {
-                using (HttpClient client = new HttpClient())
-                {
-                    client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36");
-                    client.DefaultRequestHeaders.Accept.ParseAdd("text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
-                    client.DefaultRequestHeaders.AcceptLanguage.ParseAdd("en-US,en;q=0.5");
-
-                    var response = await client.GetAsync(url);
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        throw new Exception("Ошибка при подключении к сайту. Статус-код: " + response.StatusCode);
-                    }
-
-                    string htmlContent = await response.Content.ReadAsStringAsync();
-                    if (htmlContent.Contains("Access Denied") || htmlContent.Contains("captcha"))
-                    {
-                        throw new Exception("Доступ заблокирован файрволом или требуется капча.");
-                    }
-
-                    IDocument doc = await BrowsingContext.New(Configuration.Default.WithDefaultLoader()).OpenAsync(req => req.Content(htmlContent));
-                    List<Product> products = new List<Product>();
-
-
-                    var productsHtml = doc.QuerySelectorAll(".tile-root");
-                    foreach(var element in productsHtml)
-                    {
-                        var name = element.QuerySelector("span.tsBody500Medium")?.TextContent ?? "none";
-                        var price = element.QuerySelector("span.c3019-a1")?.TextContent ?? "none";
-                        var link = element.QuerySelector("a")?.GetAttribute("href") ?? "none";
-                        products.Add(new Product
-                        {
-                            Name = name,
-                            Price = price,
-                            Url = link
-                        });
-                    }
-
-                    return products;
-                }
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"Ошибка при парсинге страницы {url}: {ex.Message}");
-            }
-        }
-
-        public async Task<List<Product>> GetLinksOzon2(string url)
-        {
-            IDocument doc = await BrowsingContext.New(Configuration.Default.WithDefaultLoader()).OpenAsync(url);
-            List<Product> products = new List<Product>();
-            var productsHtml = doc.QuerySelectorAll(".tile-root");
-            foreach (var element in productsHtml)
-            {
-                var name = element.QuerySelector("span.tsBody500Medium")?.TextContent ?? "none";
-                var price = element.QuerySelector("span.c3019-a1")?.TextContent ?? "none";
-                var link = element.QuerySelector("a")?.GetAttribute("href") ?? "none";
-                products.Add(new Product
-                {
-                    Name = name,
-                    Price = price,
-                    Url = link
-                });
-            }
-
-            return products;
-        }
-
-        public Task<List<Product>> GetProductsSimple2droida(string url)
+        public Task<Tuple<List<Product>,List<ProductCategory>>> GetProductsSimple2droida(string url)
         {
             List<Product> products = new List<Product>();
-
+            List<ProductCategory> productCategories = new List<ProductCategory>();
             // Указываем опции для Chrome
             var options = new ChromeOptions();
             options.AddArgument("--headless"); // Запуск без графического интерфейса
@@ -219,6 +95,9 @@ namespace Lab_6
 
                     foreach (var element in productsHtml)
                     {
+                        Product product = new Product();
+                        ProductCategory productCategory = new ProductCategory();
+
                         // Находим название продукта
                         var nameDiv = element.FindElement(By.CssSelector("[itemprop='name'] a"));
                         string name = nameDiv?.Text ?? "none";
@@ -229,13 +108,31 @@ namespace Lab_6
                         // Извлекаем цену
                         string price = element.FindElement(By.CssSelector("meta[itemprop='price']"))?.GetAttribute("content") ?? "none";
 
-                        // Добавляем продукт в список
-                        products.Add(new Product
+                        var categoryA = element.FindElement(By.CssSelector(".product-category a"));
+                        string category = categoryA?.Text ?? "";
+                        string categoryUrl = categoryA.GetAttribute("href") ?? "";
+
+                        product.Name = name;
+                        product.Price = price;
+                        product.Url = link;
+
+                        if (!string.IsNullOrEmpty(category))
                         {
-                            Name = name,
-                            Price = price,
-                            Url = link
-                        });
+                            productCategory.Name = category;
+                            productCategory.Url = categoryUrl;
+
+                            foreach (var cat in productCategories)
+                            {
+                                if (cat.Name == category)
+                                {
+                                    productCategory = cat;
+                                    break;
+                                }
+                            }
+                            productCategories.Add(productCategory);
+                            product.Category = productCategory;
+                        }
+                        products.Add(product);
                     }
                 }
             }
@@ -244,7 +141,7 @@ namespace Lab_6
                 throw new Exception($"Ошибка при парсинге страницы {url}: {ex.Message}");
             }
 
-            return Task.FromResult(products);
+            return Task.FromResult(new Tuple<List<Product>, List<ProductCategory>>(products, productCategories));
         }
     }
 }

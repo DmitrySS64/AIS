@@ -11,7 +11,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AIS_Client", "AIS_Client\AI
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vkontakte", "Vkontakte\Vkontakte.csproj", "{A4F76457-3B85-4509-8AC4-D86B1629D0D0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lab 6", "Lab 6\Lab 6.csproj", "{D4592D93-3F0E-494C-B07E-E2A775675D3B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lab 7", "Lab 6\Lab 7.csproj", "{D4592D93-3F0E-494C-B07E-E2A775675D3B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

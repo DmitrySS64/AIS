@@ -1,35 +1,18 @@
-﻿using AngleSharp;
-using AngleSharp.Browser;
-using AngleSharp.Dom;
-using AngleSharp.Text;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.ComponentModel;
+using System.Runtime.Remoting.Metadata.W3cXsd2001;
 
-namespace Lab_6
+namespace Lab_7
 {
     internal class Program
     {
-        const string urlListAvito = "https://www.avito.ru/tomsk/avtomobili?radius=200&searchRadius=200";
-        const string urlAvito = "https://www.avito.ru/tomsk/kollektsionirovanie/printsessa_iz_kinder_dlya_viktorii_4245155571";
 
-        static async Task Main(string[] args)
+        static async Task Main()
         {
             Parser parser = new Parser();
-
-            //await parser.ParseProductInfo("https://www.avito.ru/tomsk/kvartiry/3-k._kvartira_843_m_1215_et._4435934929");
-            //await parser.ParseProductInfo("https://www.avito.ru/kemerovo/avtomobili/vaz_lada_21099_1.5_mt_2003_250_000_km_4368838924");
-
-
-            //await parser.ListProducts(url);
-            //await parser.ParseProductInfo("https://www.avito.ru/tomsk/kollektsionirovanie/printsessa_iz_kinder_dlya_viktorii_4245155571");
-
-            //await Load2droida(parser, "https://2droida.ru/catalog/umnyy-dom");
-
-            //dbViewer.Main();
 
             while (true)
             {
@@ -48,7 +31,7 @@ namespace Lab_6
                 }
                 else if (input == ConsoleKey.D2)
                 {
-                    dbViewer.Main();
+                    DbViewer.Main();
                 }
                 else if (input == ConsoleKey.Escape)
                 {
@@ -69,9 +52,12 @@ namespace Lab_6
         static async Task Load2droida(Parser parser, string url = "https://2droida.ru/catalog/elektronika")
         {
             List<Product> products = new List<Product>();
+            List<ProductCategory> categories = new List<ProductCategory>();
             try
             {
-                products = await parser.GetProductsSimple2droida(url);
+                var result = await parser.GetProductsSimple2droida(url);
+                products = result.Item1;
+                categories = result.Item2;
 
             }
             catch (Exception ex)
@@ -81,7 +67,8 @@ namespace Lab_6
 
             if (products.Count > 0)
             {
-                Console.WriteLine($"Обнаружено {products.Count} товаров");
+                Console.WriteLine($"Обнаружено {products.Count} товаров и {categories.Count} категорий");
+                Console.WriteLine("______Товары______");
                 foreach (var product in products)
                 {
                     Console.WriteLine(product.Name);
@@ -89,11 +76,18 @@ namespace Lab_6
                     Console.WriteLine(product.Url);
                     Console.WriteLine("-----------------------------");
                 }
+                Console.WriteLine("______Категории______");
+                foreach (var category in categories)
+                {
+                    Console.WriteLine(category.Name);
+                    Console.WriteLine(category.Url);
+                    Console.WriteLine("-----------------------------");
+                }
                 Console.WriteLine("Записать в бд?(1 - если да)");
                 string answer = Console.ReadLine();
                 if (answer == "1")
                 {
-                    WriteProductsToDatabase(products);
+                    WriteProductsToDatabase(products, categories);
                 }
             }
             else
@@ -102,61 +96,52 @@ namespace Lab_6
             }
         }
 
-        static async Task LoadOzon(Parser parser, string url = "https://www.ozon.ru/category/smartfony-15502/")
+
+        static bool WriteProductsToDatabase(List<Product> products, List<ProductCategory> categories)
         {
-            List<Product> products = new List<Product>();
-            try
+            using (var db = new ParseProductsContext())
             {
-                products = await parser.GetLinksOzon(url);
-
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error: {ex.Message}");
-            }
-
-            if (products.Count > 0)
-            {
-                Console.WriteLine($"Обнаружено {products.Count} товаров");
-                foreach (var product in products)
+                foreach (var category in categories)
                 {
-                    Console.WriteLine(product.Name);
-                    Console.WriteLine(product.Price);
-                    Console.WriteLine(product.Url);
-                    Console.WriteLine("-----------------------------");
-                }
-                Console.WriteLine("Записать в бд?(1 - если да)");
-                string answer = Console.ReadLine();
-                if (answer == "1")
-                {
-                    using (var db = new Database1Entities())
+                    var existingCategory = db.ProductCategories.FirstOrDefault(c=>c.Name == category.Name);
+                    if (existingCategory == null)
                     {
-                        db.Products.AddRange(products);
-                        db.SaveChanges();
-                        Console.WriteLine("Записано в БД");
+                        db.ProductCategories.Add(category);
+                    }
+                    else
+                    {
+                        existingCategory.Url = category.Url;
                     }
                 }
-            }
-        }
+                db.SaveChanges();
 
-        static bool WriteProductsToDatabase(List<Product> products)
-        {
-            using (var db = new Database1Entities())
-            {
+
                 foreach (var product in products)
                 {
                     var existingProduct = db.Products.FirstOrDefault(p => p.Name == product.Name);
+                    var productCategory = db.ProductCategories.FirstOrDefault(c => c.Name == product.Category.Name);
                     if (existingProduct != null)
                     {
                         existingProduct.Description = product.Description;
                         existingProduct.Price = product.Price;
                         existingProduct.UpdatedDate = DateTime.Now;
                         existingProduct.Url = product.Url;
+
+                        if (productCategory != null)
+                        {
+                            existingProduct.CategoryId = productCategory.Id;
+                        }
                     }
                     else
                     {
                         product.CreatedDate = DateTime.Now;
                         product.UpdatedDate = DateTime.Now;
+
+                        if (productCategory != null)
+                        {
+                            product.CategoryId = productCategory.Id;
+                        }
+
                         db.Products.Add(product);
                     }
                 }
@@ -167,7 +152,7 @@ namespace Lab_6
             }
         }
 
-        static class dbViewer
+        static class DbViewer
         {
             private static int _currentPage = 1;
             private static int CurrentPage
@@ -175,28 +160,36 @@ namespace Lab_6
                 get { return _currentPage; }
                 set
                 {
-                    if (value <= 0)
-                    {
-                        _currentPage = 1;
-                    }
-                    else _currentPage = value;
+                    _currentPage = value <= 0 ? 1 : value;
                 }
             }
-            private static int pageSize = 5;
+            private static readonly int pageSize = 5;
+            private static bool isViewingCategories = true;
+            private static int? selectedCategoryId = null;
 
             public static bool Main()
             {
-                List<object> products = GetObjectFromDatabase();
-
                 while (true)
                 {
                     Console.Clear();
+                    Console.WriteLine(isViewingCategories
+                        ? "Просмотр категорий"
+                        : selectedCategoryId.HasValue
+                            ? $"Просмотр товаров в категории {selectedCategoryId}"
+                            : "Просмотр товаров");
+
                     Console.WriteLine($"Страница: {CurrentPage}");
-                    Console.WriteLine($"{ConsoleKey.RightArrow}. Показать следующию страницу");
-                    Console.WriteLine($"{ConsoleKey.LeftArrow}. Показать предыдущию страницу");
-                    Console.WriteLine($"{ConsoleKey.Escape}. Выход");
+                    Console.WriteLine($"Стрелка вправо. Показать следующию страницу");
+                    Console.WriteLine($"Стрелка влево. Показать предыдущию страницу");
+                    Console.WriteLine("Tab. Переключиться между категориями и товарами");
+                    Console.WriteLine("Enter. Перейти в категорию (если выбрана категория)");
+                    Console.WriteLine("Цифра 1-9. Открыть категорию по номеру");
+                    Console.WriteLine($"Esc. Выход");
                     Console.WriteLine("------------------------");
-                    ShowObjects(products);
+
+                    var objects = GetObjectsFromDatabase();
+                    ShowObjects(objects);
+
                     var input = Console.ReadKey().Key;
 
                     if (input == ConsoleKey.RightArrow)
@@ -207,6 +200,30 @@ namespace Lab_6
                     {
                         CurrentPage--;
                     }
+                    else if (input == ConsoleKey.Tab)
+                    {
+                        isViewingCategories = !isViewingCategories;
+                        selectedCategoryId = null;
+                        CurrentPage = 1;
+                    }
+                    else if (isViewingCategories && input >= ConsoleKey.D1 && input <= ConsoleKey.D9)
+                    {
+                        // Переход в категорию по нажатой цифре
+                        int index = input - ConsoleKey.D1; // Преобразуем клавишу в индекс
+                        if (index < objects.Count)
+                        {
+                            selectedCategoryId = (objects[index] as ProductCategory)?.Id;
+                            isViewingCategories = false;
+                            CurrentPage = 1;
+                        }
+                    }
+                    else if (input == ConsoleKey.Enter && isViewingCategories && objects.Any())
+                    {
+                        // Если выбрана категория, установить её ID для просмотра товаров
+                        selectedCategoryId = (objects.First() as ProductCategory)?.Id;
+                        isViewingCategories = false; // Переключаемся на просмотр товаров
+                        CurrentPage = 1;
+                    }
                     else if (input == ConsoleKey.Escape)
                     {
                         break;
@@ -215,31 +232,41 @@ namespace Lab_6
                     {
                         continue;
                     }
-                    products = GetObjectFromDatabase();
                 }
                 return true;
             }
 
-            static List<object> GetObjectFromDatabase()//как-то нужно указать из какой таблицы берется и под какую vm подстраивать
+            static List<object> GetObjectsFromDatabase()
             {
-                var products = new List<object>();
-                var products2 = new List<object>();
-                using (var db = new Database1Entities())
+                using (var db = new ParseProductsContext())
                 {
-                    products.AddRange(
-                        db.Products
-                        .OrderBy(p=>p.Id)
-                        .Skip((CurrentPage - 1) * pageSize)
-                        .Take(pageSize)
-                        .ToList()
-                        );
-                    products2.AddRange(
-                        db.Products.ToList());
-
+                    if (isViewingCategories)
+                    {
+                        return db.ProductCategories
+                            .OrderBy(c => c.Id)
+                            .Skip((CurrentPage - 1) * pageSize)
+                            .Take(pageSize)
+                            .ToList<object>();
+                    }
+                    else if (selectedCategoryId.HasValue)
+                    {
+                        return db.Products
+                            .Where(p => p.CategoryId == selectedCategoryId)
+                            .OrderBy(p => p.Id)
+                            .Skip((CurrentPage - 1) * pageSize)
+                            .Take(pageSize)
+                            .ToList<object>();
+                    }
+                    else
+                    {
+                        return db.Products
+                            .OrderBy(p => p.Id)
+                            .Skip((CurrentPage - 1) * pageSize)
+                            .Take(pageSize)
+                            .ToList<object>();
+                    }
                 }
-                return products;
             }
-
 
             static void ShowObjects(List<object> objs)
             {
