@@ -19,7 +19,7 @@ namespace Lab_6
         public string Description { get; set; }
         public string Price { get; set; }
         public string Url { get; set; }
-        public System.DateTime CreatedDate { get; set; }
-        public System.DateTime UpdatedDate { get; set; }
+        public System.DateTime CreatedDate { get; set; } = DateTime.Now;
+        public System.DateTime UpdatedDate { get; set; } = DateTime.Now;
     }
 }

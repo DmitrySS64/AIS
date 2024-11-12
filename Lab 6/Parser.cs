@@ -2,6 +2,9 @@
 using AngleSharp.Common;
 using AngleSharp.Dom;
 using AngleSharp.Io;
+using OpenQA.Selenium.Chrome;
+using OpenQA.Selenium.Support.UI;
+using OpenQA.Selenium;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -190,5 +193,58 @@ namespace Lab_6
             return products;
         }
 
+        public Task<List<Product>> GetProductsSimple2droida(string url)
+        {
+            List<Product> products = new List<Product>();
+
+            // Указываем опции для Chrome
+            var options = new ChromeOptions();
+            options.AddArgument("--headless"); // Запуск без графического интерфейса
+            options.AddArgument("--no-sandbox");
+            options.AddArgument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36");
+
+            try
+            {
+                using (IWebDriver driver = new ChromeDriver(options))
+                {
+                    // Переход на указанную страницу
+                    driver.Navigate().GoToUrl(url);
+
+                    // Ожидание загрузки элементов с классом "product-item card"
+                    WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
+                    wait.Until(drv => drv.FindElements(By.CssSelector(".product-item.card.h-100")).Count > 0);
+
+                    // Получаем все элементы с классом "product-item card"
+                    var productsHtml = driver.FindElements(By.CssSelector(".product-item.card.h-100"));
+
+                    foreach (var element in productsHtml)
+                    {
+                        // Находим название продукта
+                        var nameDiv = element.FindElement(By.CssSelector("[itemprop='name'] a"));
+                        string name = nameDiv?.Text ?? "none";
+
+                        // Получаем ссылку на продукт
+                        string link = nameDiv?.GetAttribute("href") ?? "";
+
+                        // Извлекаем цену
+                        string price = element.FindElement(By.CssSelector("meta[itemprop='price']"))?.GetAttribute("content") ?? "none";
+
+                        // Добавляем продукт в список
+                        products.Add(new Product
+                        {
+                            Name = name,
+                            Price = price,
+                            Url = link
+                        });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Ошибка при парсинге страницы {url}: {ex.Message}");
+            }
+
+            return Task.FromResult(products);
+        }
     }
 }
