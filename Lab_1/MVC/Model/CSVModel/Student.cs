@@ -1,7 +1,9 @@
-﻿using System;
+﻿using ArchitectureOfInformationSystems.MVC.View;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
@@ -22,7 +24,6 @@ namespace ArchitectureOfInformationSystems.MVC.Model.Entity
             {
                 if (value < 0 || value > 120) {
                     _age = 0;
-                    throw new Exception("Некорректный ввод возраста");
                 }
                 else
                 {
@@ -47,6 +48,27 @@ namespace ArchitectureOfInformationSystems.MVC.Model.Entity
             LastName = lastName;
             Age = age;
             IsStudent = isStudent;
+        }
+
+        public static List<Student> AddRandomEntries(int count)
+        {
+            Random random = new Random();
+            List<Student> randomStudents = new List<Student>();
+
+            // Генерируем 10 случайных студентов
+            for (int i = 0; i < count; i++)
+            {
+                string[] names = { "Дмитрий", "Петр", "Иван", "Сергей", "Мария", "Алексей", "Екатерина", "Анна", "Роман" };
+                string[] lastNames = { "Сергеев", "Петров", "Иванов", "Матлахов", "Кузнецов", "Михайлов", "Сидоров", "Попов", "Ковалев", "Дмитриев" };
+
+                string name = names[random.Next(names.Length)];
+                string lastName = lastNames[random.Next(lastNames.Length)];
+                int age = random.Next(14, 90); // Возраст от 14 до 90
+                bool isStudent = random.Next(0, 2) == 0; // Случайное значение для IsStudent (True/False)
+
+                randomStudents.Add(new Student(name, lastName, age, isStudent));
+            }
+            return randomStudents;
         }
     }
 }

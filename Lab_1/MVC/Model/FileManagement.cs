@@ -1,12 +1,26 @@
 ﻿namespace ArchitectureOfInformationSystems.MVC.Model
 {
+    /// <summary>
+    /// Класс для чтения-записи файлов типа CSV
+    /// </summary>
     public static class FileManagement
     {
+        /// <summary>
+        /// Проверка на наличие файла
+        /// </summary>
+        /// <param name="path">Путь к файлу</param>
+        /// <returns></returns>
         public static bool CheckFile(string path)
         {
             return File.Exists(path);
         }
 
+        /// <summary>
+        /// Получение массива записей формата string[]
+        /// </summary>
+        /// <param name="path">Расположение файла</param>
+        /// <param name="sep">Способ разделения значений записи</param>
+        /// <returns></returns>
         public static string[][] GetTableStr(string path, string sep = ";")
         {
             var strLines = FileReader.ReadLines(path);
@@ -18,7 +32,11 @@
             }
             return tableStr;
         }
-
+        /// <summary>
+        /// Полностью переписывает значение файла
+        /// </summary>
+        /// <param name="path">Расположение файла</param>
+        /// <param name="table">Список записей формата string[]</param>
         public static void SaveTable(string path, List<string[]> table)
         {
             FileWriter.OverwriteFile(path, table.Select(x => string.Join(";", x)).ToList());

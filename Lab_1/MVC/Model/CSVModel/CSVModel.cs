@@ -9,18 +9,22 @@ namespace ArchitectureOfInformationSystems.MVC.Model.CSVModel
 {
     public class CSVModel<T> : IModel<T> where T : class, new()
     {
+        // путь к файлу
         private readonly string pathFile;
         private List<T> table;
 
         public CSVModel(string pathFile)
         {
+            //проверка на наличие файла
             if (pathFile is null || !FileManagement.CheckFile(pathFile))
                 throw new FileNotFoundException();
             this.pathFile = pathFile;
             table = new();
-
         }
 
+        /// <summary>
+        /// Обновляет список из файла
+        /// </summary>
         private void UploadTable()
         {
             table.Clear();
@@ -32,6 +36,11 @@ namespace ArchitectureOfInformationSystems.MVC.Model.CSVModel
             }
         }
 
+        /// <summary>
+        /// Adds a new entry
+        /// </summary>
+        /// <param name="entryFields">Коллекция полей для записи</param>
+        /// <param name="NeedSave">Если стоит true сохраняет запись</param>
         public void AddEntry(IEnumerable<string> entryFields, bool NeedSave = true)
         {
             T entry;
@@ -47,6 +56,11 @@ namespace ArchitectureOfInformationSystems.MVC.Model.CSVModel
                 SaveTable();
         }
 
+        /// <summary>
+        /// Добавление записей в список
+        /// </summary>
+        /// <param name="values">Записи</param>
+        /// <param name="NeedSave">Сохраняет файл если true</param>
         public void AddValues(List<T> values, bool NeedSave = true)
         {
             foreach (var value in values)
@@ -55,6 +69,12 @@ namespace ArchitectureOfInformationSystems.MVC.Model.CSVModel
                 SaveTable();
         }
 
+        /// <summary>
+        /// Перевод колекции значений и сущность
+        /// </summary>
+        /// <param name="entryFields">значения записи</param>
+        /// <returns>объявленная сущность</returns>
+        /// <exception cref="Exception"></exception>
         private T TryCreateEntry(IEnumerable<string> entryFields)
         {
             T newEntry = new();
@@ -75,6 +95,10 @@ namespace ArchitectureOfInformationSystems.MVC.Model.CSVModel
             return newEntry;
         }
 
+        /// <summary>
+        /// Удаляет запись из списка
+        /// </summary>
+        /// <param name="key">id записи</param>
         public void RemoveEntry(int key)
         {
             try
@@ -86,6 +110,11 @@ namespace ArchitectureOfInformationSystems.MVC.Model.CSVModel
             SaveTable();
         }
 
+        /// <summary>
+        /// Заменяет одну запись на другую
+        /// </summary>
+        /// <param name="key">id записи для замены</param>
+        /// <param name="entryFields">новая запись</param>
         public void EditEntry(int key, IEnumerable<string> entryFields)
         {
             T entry;
@@ -99,6 +128,10 @@ namespace ArchitectureOfInformationSystems.MVC.Model.CSVModel
             SaveTable();
         }
 
+        /// <summary>
+        /// Возвращает актуальные данные файла
+        /// </summary>
+        /// <returns>Записи файла</returns>
         public List<T> GetValues()
         {
             try
@@ -109,6 +142,10 @@ namespace ArchitectureOfInformationSystems.MVC.Model.CSVModel
             return table;
         }
 
+        /// <summary>
+        /// Задает новый список и сохраняет файл
+        /// </summary>
+        /// <param name="values">Новые записи</param>
         public void OverwritingTable(List<T> values)
         {
             table.Clear();
@@ -116,6 +153,9 @@ namespace ArchitectureOfInformationSystems.MVC.Model.CSVModel
             SaveTable();
         }
 
+        /// <summary>
+        /// Переписывает исходный файл на текущие записи
+        /// </summary>
         private void SaveTable()
         {
             List<string[]> list = new();

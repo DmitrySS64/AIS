@@ -44,6 +44,7 @@ namespace ArchitectureOfInformationSystems.MVC.Core
             functions.AddFunction("Записать данные в файл", WriteData);
             functions.AddFunction("Удалить запись из файла", DeleteRecordFromFile);
             functions.AddFunction("Добавить запись в файл", AddAnEntry);
+            functions.AddFunction("Сгенероровать записи", AddRandomEntries);
             functions.AddFunction("Выход", Exit);
             
             SelectFromTheMenu(functions);
@@ -101,7 +102,7 @@ namespace ArchitectureOfInformationSystems.MVC.Core
         {
             List<T> records = new();
             PropertyInfo[] properties = typeof(T).GetProperties();
-            List<string> menu = new List<string>() { "Число - заменить запись", "+ - добавить новую запись", "- - удалить запись", "save - сохранить записи", "cancel - отмена" };
+            List<string> menu = new List<string>() { "Число - заменить запись", "+ - добавить новую запись", "- - удалить запись", "save - сохранить записи", "cancel - отмена", "rand - сгенерировать(если есть функционал)" };
 
             string menuInput;
             bool cycle = true;
@@ -140,7 +141,16 @@ namespace ArchitectureOfInformationSystems.MVC.Core
                     cycle = false;
                     break;
                 }
-                else if (Int32.TryParse(menuInput, out int x) && x >= 0 && x <= records.Count - 1)
+
+                else if (menuInput == "rand")
+                {
+                    if (typeof(T) == typeof(Student))
+                    {
+                        (records as List<Student>).AddRange(Student.AddRandomEntries(1));
+                    }
+                    else { Console.WriteLine("Не, нет"); }
+                }
+                if (Int32.TryParse(menuInput, out int x) && x >= 0 && x <= records.Count - 1)
                 {
                     T? record = CreateNewRecord(records[x]);
                     if (record != null)
@@ -361,10 +371,10 @@ namespace ArchitectureOfInformationSystems.MVC.Core
                 {
                     PropertyInfo property = properties[input];
 
-                    var value = Validator.ConvertToType(property.PropertyType, view.InputString($"Введите {property.Name}"));
-
                     try
                     {
+                        var value = Validator.ConvertToType(property.PropertyType, view.InputString($"Введите {property.Name}"));
+
                         property.SetValue(newRecord, value);
                     }
                     catch (Exception ex) { view.Error(ex.Message); }
@@ -394,6 +404,16 @@ namespace ArchitectureOfInformationSystems.MVC.Core
             }
 
             return newRecord;
+        }
+
+        private void AddRandomEntries()
+        {
+            if (typeof(T) == typeof(Student))
+            {
+                List<Student> students = Student.AddRandomEntries(10);
+                (model as CSVModel<Student>).AddValues(students);
+            }
+            ExitToTheMenu();
         }
     }
 
