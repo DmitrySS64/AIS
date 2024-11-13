@@ -94,125 +94,125 @@ namespace Lab2_server
             }
         }
 
-        private static Dictionary<string, object> HandleRequest(Dictionary<string, object> request)
-        {
-            string action = request["action"].ToString();
+        //private static Dictionary<string, object> HandleRequest(Dictionary<string, object> request)
+        //{
+        //    string action = request["action"].ToString();
 
-            switch (action)
-            {
-                case "get_all_records":
-                    {
-                        return GetAllRecords();
-                    }
-                case "get_record_by_id":
-                    {
-                        int id = Convert.ToInt32(request["id"]);
-                        return GetRecordByID(id);
-                    }
-                case "add_record":
-                    {
-                        var record = JsonSerializer.Deserialize<Dictionary<string, string>>(request["content"].ToString());
-                        return AddRecord(record);
+        //    switch (action)
+        //    {
+        //        case "get_all_records":
+        //            {
+        //                return GetAllRecords();
+        //            }
+        //        case "get_record_by_id":
+        //            {
+        //                int id = Convert.ToInt32(request["id"]);
+        //                return GetRecordByID(id);
+        //            }
+        //        case "add_record":
+        //            {
+        //                var record = JsonSerializer.Deserialize<Dictionary<string, string>>(request["content"].ToString());
+        //                return AddRecord(record);
 
-                    }
-                case "add_records":
-                    {
-                        var records = JsonSerializer.Deserialize<List<Dictionary<string, string>>>(request["content"].ToString());
-                        return AddRecords(records);
-                    }
-                case "remove_record":
-                    {
-                        int id = Convert.ToInt32(request["id"]);
-                        if (RemoveRecord(id))
-                        {
-                            return new Dictionary<string, object>
-                            {
-                                { "type", "success" },
-                                { "message", "Запись удалена." }
-                            };
-                        }
-                        else
-                        {
-                            return new Dictionary<string, object>
-                            {
-                                { "type", "error" },
-                                { "message", "Ошибка при удалении" }
-                            };
-                        }
-                    }
-                default:
-                    {
-                        return new Dictionary<string, object>
-                        {
-                            { "type", "error" },
-                            { "message", "Неизвестный запрос." }
-                        };
-                    }
-            }
-        }
+        //            }
+        //        case "add_records":
+        //            {
+        //                var records = JsonSerializer.Deserialize<List<Dictionary<string, string>>>(request["content"].ToString());
+        //                return AddRecords(records);
+        //            }
+        //        case "remove_record":
+        //            {
+        //                int id = Convert.ToInt32(request["id"]);
+        //                if (RemoveRecord(id))
+        //                {
+        //                    return new Dictionary<string, object>
+        //                    {
+        //                        { "type", "success" },
+        //                        { "message", "Запись удалена." }
+        //                    };
+        //                }
+        //                else
+        //                {
+        //                    return new Dictionary<string, object>
+        //                    {
+        //                        { "type", "error" },
+        //                        { "message", "Ошибка при удалении" }
+        //                    };
+        //                }
+        //            }
+        //        default:
+        //            {
+        //                return new Dictionary<string, object>
+        //                {
+        //                    { "type", "error" },
+        //                    { "message", "Неизвестный запрос." }
+        //                };
+        //            }
+        //    }
+        //}
 
-        private static Dictionary<string, object> GetAllRecords()
-        {
-            return new Dictionary<string, object>
-            {
-                { "type", "table"},
-                { "content", records }
-            };
+        //private static Dictionary<string, object> GetAllRecords()
+        //{
+        //    return new Dictionary<string, object>
+        //    {
+        //        { "type", "table"},
+        //        { "content", records }
+        //    };
 
-        }
+        //}
 
-        private static Dictionary<string, object> GetRecordByID(int id)
-        {
-            if (id >= 0 && id < records.Count)
-            {
-                return new Dictionary<string, object> {
-                    { "type", "record" },
-                    { "content", records[id] }
-                };
-            }
-            return new Dictionary<string, object>
-            {
-                { "type", "error" },
-                { "message", "Запись с указанным ID не найдена." }
-            };
-        }
+        //private static Dictionary<string, object> GetRecordByID(int id)
+        //{
+        //    if (id >= 0 && id < records.Count)
+        //    {
+        //        return new Dictionary<string, object> {
+        //            { "type", "record" },
+        //            { "content", records[id] }
+        //        };
+        //    }
+        //    return new Dictionary<string, object>
+        //    {
+        //        { "type", "error" },
+        //        { "message", "Запись с указанным ID не найдена." }
+        //    };
+        //}
 
-        private static Dictionary<string, object> AddRecord(Dictionary<string, string> record)
-        {
-            records.Add(record);
-            //SaveRecordsToFile();
-            return new Dictionary<string, object>
-            {
-                { "type", "success" },
-                { "message", "Запись добавлена." }
-            };
-            //return new Dictionary<string, object>
-            //{
-            //    { "type", "error" },
-            //    { "message", "Добавить запись не получилось" }
-            //};
-        }
+        //private static Dictionary<string, object> AddRecord(Dictionary<string, string> record)
+        //{
+        //    records.Add(record);
+        //    //SaveRecordsToFile();
+        //    return new Dictionary<string, object>
+        //    {
+        //        { "type", "success" },
+        //        { "message", "Запись добавлена." }
+        //    };
+        //    //return new Dictionary<string, object>
+        //    //{
+        //    //    { "type", "error" },
+        //    //    { "message", "Добавить запись не получилось" }
+        //    //};
+        //}
 
-        private static Dictionary<string, object> AddRecords(List<Dictionary<string, string>> records)
-        {
-            records.AddRange(records);
-            //SaveRecordsToFile();
-            return new Dictionary<string, object>
-            {
-                { "type", "success" },
-                { "message", "Записи добавлены." }
-            };
-        }
-        private static bool RemoveRecord(int id)
-        {
-            if (id >= 0 && id < records.Count)
-            {
-                records.RemoveAt(id);
-                //SaveRecordsToFile();
-                return true;
-            }
-            return false;
-        }
+        //private static Dictionary<string, object> AddRecords(List<Dictionary<string, string>> records)
+        //{
+        //    records.AddRange(records);
+        //    //SaveRecordsToFile();
+        //    return new Dictionary<string, object>
+        //    {
+        //        { "type", "success" },
+        //        { "message", "Записи добавлены." }
+        //    };
+        //}
+        //private static bool RemoveRecord(int id)
+        //{
+        //    if (id >= 0 && id < records.Count)
+        //    {
+        //        records.RemoveAt(id);
+        //        //SaveRecordsToFile();
+        //        return true;
+        //    }
+        //    return false;
+        //}
 
 
         static void Main(string[] args)
