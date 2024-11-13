@@ -166,6 +166,7 @@ namespace Lab_7
             private static readonly int pageSize = 5;
             private static bool isViewingCategories = true;
             private static int? selectedCategoryId = null;
+            private static string selectedCategoryName = "";
 
             public static bool Main()
             {
@@ -175,7 +176,7 @@ namespace Lab_7
                     Console.WriteLine(isViewingCategories
                         ? "Просмотр категорий"
                         : selectedCategoryId.HasValue
-                            ? $"Просмотр товаров в категории {selectedCategoryId}"
+                            ? $"Просмотр товаров в категории {selectedCategoryName}"
                             : "Просмотр товаров");
 
                     Console.WriteLine($"Страница: {CurrentPage}");
@@ -212,7 +213,9 @@ namespace Lab_7
                         int index = input - ConsoleKey.D1; // Преобразуем клавишу в индекс
                         if (index < objects.Count)
                         {
-                            selectedCategoryId = (objects[index] as ProductCategory)?.Id;
+                            var productCategory = (objects[index] as ProductCategory);
+                            selectedCategoryId = productCategory?.Id;
+                            selectedCategoryName = productCategory?.Name;
                             isViewingCategories = false;
                             CurrentPage = 1;
                         }
