@@ -92,7 +92,24 @@ namespace Lab_9
 
         static void Main(string[] args)
         {
-            Excel();
+            while (true) {
+                Console.WriteLine("Выберите что-то из меню");
+                Console.WriteLine("1. Создать отчет word");
+                Console.WriteLine("2. Создать отчет Excel");
+                Console.WriteLine("3. Выход");
+                var input = Console.ReadKey();
+
+                switch (input.Key) {
+                    case ConsoleKey.D1:
+                        Word();
+                        break;
+                    case ConsoleKey.D2:
+                        Excel();
+                        break;
+                    case ConsoleKey.D3: 
+                        return;
+                }
+            }
         }
 
         static void Word()
