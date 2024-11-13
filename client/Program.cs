@@ -53,6 +53,9 @@ namespace client
             }
         }
 
+        /// <summary>
+        /// Получить все сущности
+        /// </summary>
         private static void LoadEntities()
         {
             SendRequest(new Request { Command = Commands.getClasses });
@@ -62,7 +65,9 @@ namespace client
             Console.WriteLine($"Available classes: {string.Join(", ", entities)}");
         }
 
-        
+        /// <summary>
+        /// Вызов главного меню 
+        /// </summary>
         private static void ShowMainMenu()
         {
             string currentEntity = indexCurrentEntity != -1 ? entities[indexCurrentEntity] : "none";
@@ -74,6 +79,9 @@ namespace client
         }
 
         #region CRUD
+        /// <summary>
+        /// Показать список записей
+        /// </summary>
         private static void ListEntities()
         {
             Console.Clear();
@@ -90,6 +98,9 @@ namespace client
             ConsoleTable.PrintTable(objects);
         }
 
+        /// <summary>
+        /// Поиск записи
+        /// </summary>
         private static void ViewEntityById()
         {
             Console.Clear();
@@ -113,12 +124,18 @@ namespace client
             }
         }
 
+        /// <summary>
+        /// Добавить пользователя
+        /// </summary>
         private static void AddEntity()
         {
             Console.Clear();
             HandleAddOrUpdateEntity(Commands.add);
         }
 
+        /// <summary>
+        /// Редактировать пользователя
+        /// </summary>
         private static void UpdateEntityById()
         {
             Console.Clear();
@@ -139,6 +156,9 @@ namespace client
             }
         }
 
+        /// <summary>
+        /// Удалить запись по ID
+        /// </summary>
         private static void DeleteEntityById()
         {
             Console.Clear();
@@ -162,6 +182,9 @@ namespace client
             }
         }
 
+        /// <summary>
+        /// Сменить таблицу
+        /// </summary>
         private static void SwitchEntity()
         {
             Console.Clear();
@@ -183,6 +206,12 @@ namespace client
             }
         }
 
+        /// <summary>
+        /// Вызов пользовательского интерфейса для редактирования записи
+        /// </summary>
+        /// <param name="form">Форма для записи</param>
+        /// <param name="existingData">Начальное значение данных</param>
+        /// <returns></returns>
         private static Dictionary<string, object> CollectEntityData(FormDescription form, Dictionary<string, object> existingData)
         {
             Dictionary<string, object> data = new(existingData);
@@ -220,6 +249,11 @@ namespace client
             }
         }
 
+        /// <summary>
+        /// Добавить или обновить запись
+        /// </summary>
+        /// <param name="command">Command.add || Command.update</param>
+        /// <param name="entityId">Id записи если нужно отредактировать</param>
         private static void HandleAddOrUpdateEntity(string command, int? entityId = null)
         {
             Dictionary<string, object> entityData = new Dictionary<string, object>();
@@ -268,6 +302,13 @@ namespace client
         }
         #endregion CRUD
 
+
+        /// <summary>
+        /// Конвертирование ввода под нужный тип 
+        /// </summary>
+        /// <param name="input">ввод</param>
+        /// <param name="type">тип данных</param>
+        /// <returns></returns>
         private static object ConvertToFieldType(string input, string type)
         {
             switch (type.ToLower())
@@ -298,12 +339,20 @@ namespace client
             return null;
         }
 
+        /// <summary>
+        /// Отправить сообщение серверу
+        /// </summary>
+        /// <param name="request"></param>
         private static void SendRequest(Request request)
         {
             var data = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(request));
             client.Send(data, data.Length, serverEP);
         }
 
+        /// <summary>
+        /// Получить ответ сервера
+        /// </summary>
+        /// <returns></returns>
         private static string ReceiveResponse()
         {
             var receivedData = client.Receive(ref serverEP);
@@ -316,12 +365,15 @@ namespace client
         }
     }
 
+    /// <summary>
+    /// Сообщение сервера
+    /// </summary>
     public class Request
     {
-        public string ClassName { get; set; }
-        public string Command { get; set; }
-        public int Id { get; set; }
-        public string Payload { get; set; }
+        public string ClassName { get; set; } //имя таблицы
+        public string Command { get; set; } //команда
+        public int Id { get; set; } //id записи
+        public string Payload { get; set; } //параметры
     }
 
     public class FormField
@@ -333,6 +385,9 @@ namespace client
         public object DefaultValue { get; set; } // Значение по умолчанию, если применимо
     }
 
+    /// <summary>
+    /// Хранит получаемый-отправляемый класс и его полями
+    /// </summary>
     public class FormDescription
     {
         public string ClassName { get; set; }

@@ -10,6 +10,11 @@
             Title = title;
             menu = new List<MenuItem>();
         }
+        /// <summary>
+        /// Создать меню
+        /// </summary>
+        /// <param name="menu">Список меню</param>
+        /// <param name="title">Имя меню</param>
         public Menu(List<MenuItem> menu, string? title = null)
         {
             Title = title;
@@ -33,6 +38,9 @@
             }
             menu.Add(new MenuItem(item, action, consoleKey));
         }
+        /// <summary>
+        /// Показывает список возможных команд и выполняет их
+        /// </summary>
         public void UseMenu()
         {
             if (Title != null) Console.WriteLine($"=={Title}==");
@@ -50,9 +58,9 @@
 
     public record MenuItem
     {
-        public string Item { get; set; }
-        public ConsoleKey? ConsoleKey { get; set; }
-        public Action Action { get; set; }
+        public string Item { get; set; } // Имя элемента списка
+        public ConsoleKey? ConsoleKey { get; set; } //кнопка выбора списка
+        public Action Action { get; set; } // Действие
         public MenuItem(string item, Action action, ConsoleKey? consoleKey = null)
         {
             Item = item;
