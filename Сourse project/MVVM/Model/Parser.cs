@@ -13,6 +13,7 @@ using static Сourse_project.MVVM.Model.DNSParseContext;
 using static Сourse_project.MVVM.Model.CategoryService;
 using System.Data.Entity.Core.Metadata.Edm;
 using static Сourse_project.MVVM.Model.CasingMaterial;
+using System.ComponentModel;
 
 namespace Сourse_project.MVVM.Model
 {
@@ -122,7 +123,17 @@ namespace Сourse_project.MVVM.Model
                 {
                     driver.Navigate().GoToUrl(url);
 
-                    driver.FindElement(By.CssSelector(buttonSelector)).Click(); //раскрыть подробности
+                    //driver.FindElement(By.CssSelector(buttonSelector)).Click(); //раскрыть подробности
+
+
+                    IJavaScriptExecutor js = (IJavaScriptExecutor)driver;
+                    IWebElement button = driver.FindElement(By.CssSelector(buttonSelector));
+
+                    //Action action = new Action();
+                    //https://stackoverflow.com/questions/11908249/debugging-element-is-not-clickable-at-point-error
+                    ((IJavaScriptExecutor)driver).ExecuteScript("arguments[0].scrollIntoView();", button);
+                    button.Click();
+
 
                     await Task.Delay(1000);
 
@@ -132,6 +143,8 @@ namespace Сourse_project.MVVM.Model
                     {
                         var key = row.FindElement(By.CssSelector("th")).Text.Trim();
                         var value = row.FindElement(By.CssSelector("td p")).Text.Trim();
+
+                        Console.WriteLine(key + ": " + value);
 
                         switch (key)
                         {
@@ -219,17 +232,50 @@ namespace Сourse_project.MVVM.Model
                     context.Smartphones.Add(smartphone);
                     await context.SaveChangesAsync();
                 }
+                ShowObjects(new List<object> { smartphone });
+                Console.ReadKey();
             }
             
             catch (Exception ex)
                 {
-                    Console.WriteLine($"Ошибка при парсинге каталога: {ex.Message}");
+                    Console.WriteLine($"Ошибка при парсинге телефона: {ex.Message}");
                     throw;
                 }
 
             return smartphone;
         }
 
+
+        static void ShowObjects(List<object> objs)
+        {
+            if (objs == null || !objs.Any()) { Console.WriteLine("Нет записей"); return; }
+
+            // Получаем тип первого объекта в списке
+            var modelType = objs.First().GetType();
+
+            // Выводим заголовки свойств (с учетом DisplayNameAttribute)
+            Console.WriteLine("Объекты:");
+            foreach (var propertyInfo in modelType.GetProperties())
+            {
+                // Проверяем, есть ли DisplayNameAttribute
+                var displayNameAttr = propertyInfo.GetCustomAttributes(typeof(DisplayNameAttribute), false).FirstOrDefault() as DisplayNameAttribute;
+                var displayName = displayNameAttr != null ? displayNameAttr.DisplayName : propertyInfo.Name;
+
+                Console.Write($"{displayName}\t");
+            }
+            Console.WriteLine();
+
+            // Выводим значения каждого объекта
+            foreach (var item in objs)
+            {
+                foreach (var propertyInfo in modelType.GetProperties())
+                {
+                    var value = propertyInfo.GetValue(item, null) ?? "null";
+                    Console.Write($"{value}\t");
+                }
+                Console.WriteLine();
+            }
+        }
 
         //public Task<List<Catalog>> ParseCatalog()
         //{
