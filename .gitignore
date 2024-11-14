@@ -124,6 +124,7 @@ DocProject/Help/html
 
 # Click-Once directory
 publish/
+packages/
 
 # Publish Web Output
 *.[Pp]ublish.xml
@@ -136,4 +137,5 @@ publish/
 # NuGet Packages
 *.nupkg
 
+.vs/
 */.vs/
